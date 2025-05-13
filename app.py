@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 
 # ====== LOAD THE MODEL ======
-model = tf.keras.models.load_model("D:/Agri_Leaf_disease/model/mobilenetv2_LeafDisease_model_trained.h5")
+model = tf.keras.models.load_model("D:/Leaf_diseaseproject/model/mobilenetv2_LeafDisease_model_trained.h5")
 
 # ====== CLASS LABELS WITH DISEASE MANAGEMENT SUGGESTIONS ======
 class_labels = [
