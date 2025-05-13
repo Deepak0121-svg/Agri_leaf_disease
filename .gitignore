@@ -1,0 +1,7 @@
+.venv/
+# Ignore model folders
+test/
+train/
+val/
+
+
