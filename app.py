@@ -3,10 +3,11 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # ====== LOAD THE MODEL ======
 model = tf.keras.models.load_model("model/mobilenetv2_LeafDisease_model_trained.h5")
-
 
 # ====== CLASS LABELS WITH DISEASE MANAGEMENT SUGGESTIONS ======
 class_labels = [
@@ -54,33 +55,33 @@ class_labels = [
     ("Tomato___healthy", "Ensure proper watering, soil drainage, and pest management.")
 ]
 
-# ====== CONVERT CLASS LABELS TO DICTIONARY ======
 class_labels_dict = dict(class_labels)
 
 # ====== STREAMLIT UI ======
 st.title("🌿 Leaf Disease Detector")
 st.write("Upload a leaf image to detect the disease and get management tips.")
 
-# ====== IMAGE UPLOAD ======
 uploaded_image = st.file_uploader("Upload a leaf image...", type=["jpg", "jpeg", "png"])
 
-# ====== ON IMAGE UPLOAD ======
 if uploaded_image:
     image = Image.open(uploaded_image).convert("RGB")
     st.image(image, caption="📷 Uploaded Image", use_column_width=True)
 
-    # ====== IMAGE PREPROCESSING ======
-    img_array = np.array(image.resize((224, 224))) / 255.0  # MobileNetV1 input size is 224x224
+    # ====== PREPROCESS IMAGE ======
+    img_array = np.array(image.resize((224, 224))) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    # ====== PREDICT DISEASE ======
+    # ====== PREDICT ======
     predictions = model.predict(img_array)[0]
-    top_idx = predictions.argmax()
-    top_label = class_labels[top_idx][0]
-    top_prob = predictions[top_idx]
+    top_3_indices = predictions.argsort()[-3:][::-1]
+    top_3_labels = [class_labels[i][0] for i in top_3_indices]
+    top_3_probs = [predictions[i] for i in top_3_indices]
+
+    # ====== DISPLAY TOP PREDICTION ======
+    top_label = top_3_labels[0]
+    top_prob = top_3_probs[0]
     confidence_score = top_prob * 100
 
-    # ====== CLASSIFY SEVERITY ======
     if confidence_score > 75:
         severity = "Mild"
     elif confidence_score > 50:
@@ -88,13 +89,34 @@ if uploaded_image:
     else:
         severity = "Severe"
 
-    # ====== GET MANAGEMENT SUGGESTION ======
     suggestion = class_labels_dict.get(top_label, "No suggestion available.")
 
-    # ====== DISPLAY RESULTS ======
     st.subheader("🩺 Prediction Result")
     st.markdown(f"🔍 **Detected Disease:** `{top_label}`")
     st.markdown(f"📊 **Confidence:** `{confidence_score:.2f}%`")
     st.markdown(f"⚠️ **Severity:** `{severity}`")
-    st.markdown(f"🌱 **Disease Management Tip:**")
+    st.markdown("🌱 **Disease Management Tip:**")
     st.info(suggestion)
+
+    # ====== COLOR SET FOR CHART ======
+    color_list = ["#00a65a", "#f39c12", "#dd4b39"]  # green, yellow-orange, red
+
+    # ====== BAR CHART WITH CONFIDENCE PERCENTAGES ======
+    df = pd.DataFrame({
+        "Disease": top_3_labels,
+        "Confidence": [round(p * 100, 2) for p in top_3_probs]
+    })
+
+    fig, ax = plt.subplots()
+    bars = ax.barh(df["Disease"], df["Confidence"], color=color_list)
+    ax.set_xlabel("Confidence (%)")
+    ax.set_title("Top 3 Predictions")
+    ax.invert_yaxis()
+
+    # ====== ADD PERCENTAGE ON BARS ======
+    for i, bar in enumerate(bars):
+        width = bar.get_width()
+        ax.text(width + 1, bar.get_y() + bar.get_height() / 2,
+                f"{df['Confidence'][i]}%", va='center')
+
+    st.pyplot(fig)
