@@ -6,6 +6,7 @@ from PIL import Image
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 # ====== LOAD THE MODEL ======
 model = tf.keras.models.load_model("model/mobilenetv2_LeafDisease_model_trained.h5")
 
@@ -92,7 +93,7 @@ if uploaded_image:
     suggestion = class_labels_dict.get(top_label, "No suggestion available.")
 
     st.subheader("🩺 Prediction Result")
-    st.markdown(f"🔍 **Detected Disease:** `{top_label}`")
+    st.markdown(f"🔍 **Detected:** `{top_label}`")
     st.markdown(f"📊 **Confidence:** `{confidence_score:.2f}%`")
     st.markdown(f"⚠️ **Severity:** `{severity}`")
     st.markdown("🌱 **Disease Management Tip:**")
